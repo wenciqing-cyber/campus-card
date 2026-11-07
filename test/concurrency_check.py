@@ -1,5 +1,5 @@
 # 并发验证：一部分验限流（代理模式），一部分验余额原子扣减（责任链 + SQL 条件更新）
-# 运行前先保证：622100000001 余额 ≥ 30 元，622100000003 余额 = 100 元
+# 脚本自己会把两张卡的余额补到目标值（只补不减），直接跑即可
 import json
 import sys
 import threading
@@ -9,7 +9,7 @@ import urllib.request
 
 BASE = "http://localhost:8080/api"
 RATE_CARD = "622100000001"   # 限流用，余额充足
-RACE_CARD = "622100000003"   # 余额竞争用，运行前重置为 100
+RACE_CARD = "622100000003"   # 余额竞争用，补到 100 元后再跑
 
 
 def call(path, body):
@@ -71,8 +71,24 @@ def report(title, results, cost, before, after):
     print("余额: %s -> %s" % (before, after))
 
 
+def ensure_balance(card_no, target):
+    """把余额补到目标值（只补不减）。充值本身也走一遍完整交易链路，顺带验证一次"""
+    cur = float(balance(card_no))
+    if cur >= target:
+        return cur
+    need = round(target - cur, 2)
+    call("/pay/recharge", {
+        "cardNo": card_no,
+        "amount": need,
+        "requestNo": "PREP" + str(int(time.time() * 1000)),
+    })
+    return float(balance(card_no))
+
+
 if __name__ == "__main__":
     tag = str(int(time.time()))  # 请求号带时间戳，不然重复跑会被幂等拦住
+    ensure_balance(RATE_CARD, 30)
+    ensure_balance(RACE_CARD, 100)
     print("限流卡 %s 余额 %s" % (RATE_CARD, balance(RATE_CARD)))
     print("竞争卡 %s 余额 %s" % (RACE_CARD, balance(RACE_CARD)))
 

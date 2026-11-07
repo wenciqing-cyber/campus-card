@@ -63,10 +63,12 @@ public class AccountService {
         return account;
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> listAll() {
         return cardMapper.listWithAccount();
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> detail(String cardNo) {
         Card card = cardMapper.findByCardNo(cardNo);
         if (card == null) {

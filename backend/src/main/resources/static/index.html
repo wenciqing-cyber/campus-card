@@ -225,7 +225,8 @@
         </div>
 
         <div class="filter-bar reveal">
-            <input v-model="filter.cardNo" placeholder="卡号" @keyup.enter="loadTrades(1)">
+            <input v-model="filter.cardNo" placeholder="卡号（按 / 快速定位）" @input="onCardNoInput"
+                   @keyup.enter="loadTrades(1)">
             <select v-model="filter.tradeType">
                 <option value="">全部类型</option>
                 <option value="CONSUME">消费</option>
@@ -251,7 +252,7 @@
                 </thead>
                 <tbody>
                 <tr v-for="t in trades.rows" :key="t.tradeNo">
-                    <td class="mono">{{ t.tradeNo }}</td>
+                    <td class="mono copyable" title="点击复制交易号" @click="copyText(t.tradeNo)">{{ t.tradeNo }}</td>
                     <td class="mono">{{ t.cardNo }}</td>
                     <td><span class="pill" :class="'type-' + t.tradeType">{{ typeLabel(t.tradeType) }}</span></td>
                     <td>{{ t.terminalNo || '—' }}</td>

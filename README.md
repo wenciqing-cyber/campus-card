@@ -183,8 +183,30 @@ python test/concurrency_check.py # 并发限流与余额竞争
 
 ## 八、文档
 
-`docs/期末考查报告.docx` 与同名的 pdf 是本次提交的报告，共 34 页，包含用例图、流程图、E-R 图、核心类图、时序图五张插图与 16 张表格。插图由 `docs/make_figures.py` 用 Pillow 绘制，报告由 `docs/make_report.py` 读取学院模板后生成，两个脚本都可重复执行。
+`docs/期末考查报告.docx` 与同名的 pdf 是本次提交的报告，共 35 页，包含用例图、流程图、E-R 图、核心类图、时序图五张插图与 16 张表格。插图由 `docs/make_figures.py` 用 Pillow 绘制，报告由 `docs/make_report.py` 读取学院模板后生成，两个脚本都可重复执行。
 
-## 九、说明
+## 九、常见问题
+
+**端口被占用**
+
+`application.yml` 里默认 8080，改 `server.port` 即可；或者先 `netstat -ano | findstr :8080` 找到占用进程。
+
+**启动报 `Access denied for user 'root'`**
+
+没有设置 `DB_PASSWORD` 环境变量，或者密码不对。Windows 下 `set DB_PASSWORD=你的密码` 后再启动，Linux/macOS 用 `export DB_PASSWORD=...`。
+
+**启动报 `Unknown database 'campus_card'`**
+
+还没有导入建库脚本，先执行第三节第 1 步。
+
+**`mvn package` 失败**
+
+本机离线仓库里缺 surefire 与 jar 插件的依赖，`package` 打不出 fat jar。这个项目不需要打包，`bash build.sh -q compile` 编译出 `target/classes`，再用 `run.bat`（或 `java -cp "target/classes;lib/*"`）启动即可。`lib/` 由 `prepare_lib.sh` 从本地 Maven 仓库复制。
+
+**页面打开是空白**
+
+确认服务已启动，并且 `backend/target/classes/static/index.html` 存在（编译时会从 `src/main/resources/static` 复制过去）。
+
+## 十、说明
 
 开发过程中使用 AI 辅助编码与文档整理，具体说明见报告第 7 章。

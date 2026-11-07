@@ -45,6 +45,7 @@ createApp({
 
             toast: { show: false, text: '', type: 'info' },
             timers: [],
+            searchTimer: null,
             revealObserver: null
         };
     },
@@ -93,6 +94,7 @@ createApp({
     mounted() {
         this.loadAll();
         window.addEventListener('scroll', this.onScroll, { passive: true });
+        window.addEventListener('keydown', this.onKeydown);
         this.onScroll();
         this.revealObserver = new IntersectionObserver(entries => {
             entries.forEach(e => {
@@ -115,6 +117,8 @@ createApp({
     beforeUnmount() {
         this.timers.forEach(t => clearInterval(t));
         window.removeEventListener('scroll', this.onScroll);
+        window.removeEventListener('keydown', this.onKeydown);
+        clearTimeout(this.searchTimer);
         if (this.revealObserver) this.revealObserver.disconnect();
     },
 
@@ -188,6 +192,41 @@ createApp({
         resetFilter() {
             this.filter = { cardNo: '', tradeType: '', terminalNo: '' };
             this.loadTrades(1);
+        },
+
+        /* 卡号输入停 300 毫秒再查，避免敲一个字符打一次接口 */
+        onCardNoInput() {
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => this.loadTrades(1), 300);
+        },
+
+        /* 交易号太长，手动拖选很烦，点一下直接进剪贴板 */
+        async copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.showToast('已复制 ' + text, 'success');
+            } catch (e) {
+                this.showToast('复制失败，请手动选中', 'error');
+            }
+        },
+
+        /*
+         * 全局快捷键
+         * Esc 关充值浮层；/ 跳到流水卡号搜索框（光标不在输入框里时才生效）
+         */
+        onKeydown(e) {
+            if (e.key === 'Escape' && this.recharge.show) {
+                this.recharge.show = false;
+                return;
+            }
+            if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+                const box = document.querySelector('.filter-bar input');
+                if (box) {
+                    e.preventDefault();
+                    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    box.focus({ preventScroll: true });
+                }
+            }
         },
 
         /* ---------- 交易 ---------- */
