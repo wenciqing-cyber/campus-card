@@ -898,6 +898,17 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 
 .modal-sub { color: var(--gray); font-size: 13px; margin-bottom: 18px; }
 
+/* 浮层是白底，输入框不能沿用深色区块的浅色字 */
+.modal-card .field input {
+    border-color: rgba(0, 0, 0, .12);
+    background: #fff;
+    color: var(--dark);
+}
+
+.modal-card .field input:focus { border-color: var(--blue); }
+
+.modal-card .field label { color: var(--gray); }
+
 .quick-amounts { display: flex; gap: 8px; margin: 4px 0 18px; flex-wrap: wrap; }
 
 .fade-enter-active, .fade-leave-active { transition: opacity .3s var(--ease); }
