@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+setlocal enabledelayedexpansion
 cd /d %~dp0backend
 
 REM 数据库密码通过环境变量注入，配置文件里不写明文
@@ -11,17 +12,50 @@ if "%DB_PASSWORD%"=="" (
   exit /b 1
 )
 
-if not exist target\classes (
-  echo [x] 还没编译，先执行 bash build.sh -q compile
+REM Spring Boot 3 需要 JDK 17 以上，挨个候选试，取第一个版本够的
+set "JAVA_EXE="
+set "CAND=%JAVA_HOME%\bin\java.exe" & call :try_java
+set "CAND=%ProgramFiles%\Java\jdk-17\bin\java.exe" & call :try_java
+set "CAND=%ProgramFiles%\Java\jdk-21\bin\java.exe" & call :try_java
+set "CAND=%ProgramFiles%\Eclipse Adoptium\jdk-17\bin\java.exe" & call :try_java
+set "CAND=D:\APP\Work\IDEA\IntelliJ IDEA 2026.2.3\jbr\bin\java.exe" & call :try_java
+
+if "%JAVA_EXE%"=="" (
+  echo [x] 没有找到 JDK 17 以上的 java，请安装 JDK 17+ 或设置 JAVA_HOME
   pause
   exit /b 1
 )
 
-REM 系统默认是 JDK8，Spring Boot 3 需要 17 以上，这里优先用 IDEA 自带的 JBR
-set "JAVA_EXE=java"
-if exist "%ProgramFiles%\Java\jdk-17\bin\java.exe" set "JAVA_EXE=%ProgramFiles%\Java\jdk-17\bin\java.exe"
-if exist "D:\APP\Work\IDEA\IntelliJ IDEA 2026.2.3\jbr\bin\java.exe" set "JAVA_EXE=D:\APP\Work\IDEA\IntelliJ IDEA 2026.2.3\jbr\bin\java.exe"
+REM 打过包就直接跑 jar，没打包就用编译产物加 lib 里的依赖
+if exist "target\campus-card-1.0.0.jar" (
+  echo [*] 启动 campus-card-1.0.0.jar ... http://localhost:8080
+  "%JAVA_EXE%" -Dfile.encoding=UTF-8 -jar "target\campus-card-1.0.0.jar"
+  pause
+  exit /b 0
+)
+
+if not exist target\classes (
+  echo [x] 还没编译，先执行 bash build.sh -o -q compile
+  pause
+  exit /b 1
+)
 
 echo [*] 启动 Spring Boot ... http://localhost:8080
 "%JAVA_EXE%" -Dfile.encoding=UTF-8 -cp "target\classes;lib\*" com.lwb.campuscard.CampusCardApplication
 pause
+exit /b 0
+
+
+:try_java
+if defined JAVA_EXE goto :eof
+if not exist "%CAND%" goto :eof
+for /f "tokens=3" %%v in ('"%CAND%" -version 2^>^&1 ^| findstr /i "version"') do set "JVER=%%~v"
+if not defined JVER goto :eof
+for /f "tokens=1,2 delims=." %%a in ("!JVER!") do (
+  if "%%a"=="1" (set "JMAJOR=%%b") else (set "JMAJOR=%%a")
+)
+if not defined JMAJOR goto :eof
+if !JMAJOR! GEQ 17 set "JAVA_EXE=%CAND%"
+set "JVER="
+set "JMAJOR="
+goto :eof

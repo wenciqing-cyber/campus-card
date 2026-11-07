@@ -3,7 +3,7 @@
 # 这样启动不依赖 Maven（本机离线，maven-jar-plugin 拉不下来）。
 set -e
 cd "$(dirname "$0")"
-M2="${M2_REPO:-/c/Users/WCQ/.m2/repository}"
+M2="${M2_REPO:-$HOME/.m2/repository}"
 DEST=backend/lib
 rm -rf "$DEST"; mkdir -p "$DEST"
 

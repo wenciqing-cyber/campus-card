@@ -3,6 +3,9 @@ backend/target/
 backend/lib/
 backend/*.iml
 
+# 报告与报告插图，不进代码仓库
+docs/
+
 # 部署用的私钥，绝不能提交
 .deploy/
 
