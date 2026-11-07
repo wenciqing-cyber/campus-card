@@ -11,7 +11,6 @@ import com.lwb.campuscard.pattern.observer.NotifyObserver;
 import com.lwb.campuscard.pattern.observer.ReconciliationObserver;
 import com.lwb.campuscard.pattern.observer.StatisticsObserver;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -24,10 +23,10 @@ import java.util.Map;
 /**
  * 查询与统计：明细、对账、趋势、实时概览
  * 实时计数不查库，直接读观察者里攒着的内存数据
- * 整个类只读，事务层面也标成只读，MySQL 会少走一次提交
+ * 这里不加事务注解：查询都是单表 SQL，MyBatis 每次自己开连接，
+ * 加事务反而会让 notifications / reconciliation 这种纯内存接口也去连库
  */
 @Service
-@Transactional(readOnly = true)
 public class QueryService {
 
     private final TradeMapper tradeMapper;

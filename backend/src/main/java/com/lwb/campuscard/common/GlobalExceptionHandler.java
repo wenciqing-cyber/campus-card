@@ -3,11 +3,16 @@ package com.lwb.campuscard.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.jdbc.CannotGetJdbcConnectionException;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 全局异常处理：业务异常转成 Result，其余兜底
@@ -53,10 +58,41 @@ public class GlobalExceptionHandler {
         return Result.fail(ErrorCode.BIZ_ERROR, "数据已存在，请勿重复提交");
     }
 
+    /**
+     * 静态资源不存在：浏览器自动请求的 favicon.ico、直接敲错的路径都走这里
+     * 这不是程序出错，按 404 返回，不打堆栈，否则控制台会被刷满
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Result<Void>> handleNoResource(NoResourceFoundException e) {
+        log.debug("资源不存在：{}", e.getResourcePath());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Result.fail(HttpStatus.NOT_FOUND.value(), "资源不存在"));
+    }
+
+    /**
+     * 数据库连不上：最常见的就是没设 DB_PASSWORD 而走了默认值，或者 MySQL 没启动
+     * 这种情况只打一行，不打整条堆栈
+     */
+    @ExceptionHandler({CannotCreateTransactionException.class, CannotGetJdbcConnectionException.class})
+    public Result<Void> handleDbDown(Exception e) {
+        log.error("数据库连接失败：{}", rootMessage(e));
+        return Result.fail(ErrorCode.BIZ_ERROR,
+                "数据库连接失败，请检查 MySQL 是否启动、DB_PASSWORD 环境变量是否正确");
+    }
+
     @ExceptionHandler(Exception.class)
     public Result<Void> handleOther(Exception e) {
         String ref = Long.toHexString(System.nanoTime());
         log.error("未处理异常 ref={}", ref, e);
         return Result.fail(ErrorCode.BIZ_ERROR, "系统繁忙，请稍后重试（错误编号 " + ref + "）");
+    }
+
+    /** Hikari 会把真实原因裹好几层，取最里面那句 */
+    private String rootMessage(Throwable e) {
+        Throwable t = e;
+        while (t.getCause() != null && t.getCause() != t) {
+            t = t.getCause();
+        }
+        return t.getMessage();
     }
 }
