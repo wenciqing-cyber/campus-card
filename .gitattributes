@@ -1,0 +1,13 @@
+# 统一换行：仓库里一律 LF，避免 Windows 上 checkout 出的 shell 脚本带 CR
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
+*.jar binary
